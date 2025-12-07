@@ -65,7 +65,7 @@ public class ColorScheme {
     private final TonalPalette mError;
     private final Hct mProposedSeedHct;
 
-    public ColorScheme(@ColorInt int seed, boolean isDark, Style style, double contrastLevel) {
+    public ColorScheme(@ColorInt int seed, boolean isDark, @Style.Type int style, double contrastLevel) {
         this(seed, isDark, style, contrastLevel, 1f, 1f, false, false, null);
     }
 
@@ -111,17 +111,17 @@ public class ColorScheme {
         };
 
         final DynamicScheme bgScheme = switch (style) {
-            case SPRITZ -> new SchemeNeutral(bgSeedHct, isDark, contrastLevel);
-            case TONAL_SPOT -> new SchemeTonalSpot(bgSeedHct, isDark, contrastLevel);
-            case VIBRANT -> new SchemeVibrant(bgSeedHct, isDark, contrastLevel);
-            case EXPRESSIVE -> new SchemeExpressive(bgSeedHct, isDark, contrastLevel);
-            case RAINBOW -> new SchemeRainbow(bgSeedHct, isDark, contrastLevel);
-            case FRUIT_SALAD -> new SchemeFruitSalad(bgSeedHct, isDark, contrastLevel);
-            case CONTENT -> new SchemeContent(bgSeedHct, isDark, contrastLevel);
-            case MONOCHROMATIC -> new SchemeMonochrome(bgSeedHct, isDark, contrastLevel);
+            case Style.SPRITZ -> new SchemeNeutral(bgSeedHct, isDark, contrastLevel);
+            case Style.TONAL_SPOT -> new SchemeTonalSpot(bgSeedHct, isDark, contrastLevel);
+            case Style.VIBRANT -> new SchemeVibrant(bgSeedHct, isDark, contrastLevel);
+            case Style.EXPRESSIVE -> new SchemeExpressive(bgSeedHct, isDark, contrastLevel);
+            case Style.RAINBOW -> new SchemeRainbow(bgSeedHct, isDark, contrastLevel);
+            case Style.FRUIT_SALAD -> new SchemeFruitSalad(bgSeedHct, isDark, contrastLevel);
+            case Style.CONTENT -> new SchemeContent(bgSeedHct, isDark, contrastLevel);
+            case Style.MONOCHROMATIC -> new SchemeMonochrome(bgSeedHct, isDark, contrastLevel);
             // SystemUI Schemes
-            case CLOCK -> new SchemeClock(bgSeedHct, isDark, contrastLevel);
-            case CLOCK_VIBRANT -> new SchemeClockVibrant(bgSeedHct, isDark, contrastLevel);
+            case Style.CLOCK -> new SchemeClock(bgSeedHct, isDark, contrastLevel);
+            case Style.CLOCK_VIBRANT -> new SchemeClockVibrant(bgSeedHct, isDark, contrastLevel);
             default -> throw new IllegalArgumentException("Unknown style: " + style);
         };
 
@@ -136,6 +136,7 @@ public class ColorScheme {
         mNeutral2 = new TonalPalette(bgScheme.neutralVariantPalette,
                 tintBackground && wholePalette ? luminanceFactor : 1f,
                 tintBackground && wholePalette ? chromaFactor : 1f);
+        mError = new TonalPalette(mMaterialScheme.errorPalette, luminanceFactor, chromaFactor);
     }
 
     public ColorScheme(@ColorInt int seed, boolean darkTheme) {
