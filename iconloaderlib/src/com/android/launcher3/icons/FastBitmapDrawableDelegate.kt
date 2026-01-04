@@ -17,6 +17,7 @@
 package com.android.launcher3.icons
 
 import android.graphics.BitmapShader
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
@@ -25,6 +26,7 @@ import android.graphics.Rect
 import android.graphics.Shader
 import android.graphics.Shader.TileMode.CLAMP
 import androidx.core.graphics.ColorUtils
+import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_CUSTOM_SHAPE
 import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_FULL_BLEED
 import com.android.launcher3.icons.GraphicsUtils.resizeToContentSize
 
@@ -76,6 +78,7 @@ interface FastBitmapDrawableDelegate {
             iconShape: IconShape,
             paint: Paint,
             host: FastBitmapDrawable,
+            creationFlags: Int,
         ): FastBitmapDrawableDelegate
     }
 
@@ -106,15 +109,36 @@ interface FastBitmapDrawableDelegate {
         }
     }
 
+    /**
+     * Delegate for icon pack icons with custom shapes.
+     * Draws bitmap directly without applying launcher's icon shape mask.
+     * Icon pack icons have their shape already baked into the bitmap.
+     */
+    object CustomShapeDrawableDelegate : FastBitmapDrawableDelegate {
+
+        override fun drawContent(
+            info: BitmapInfo,
+            iconShape: IconShape,
+            canvas: Canvas,
+            bounds: Rect,
+            paint: Paint,
+        ) {
+            canvas.drawBitmap(info.icon, null, bounds, paint)
+        }
+    }
+
     object SimpleDelegateFactory : DelegateFactory {
         override fun newDelegate(
             bitmapInfo: BitmapInfo,
             iconShape: IconShape,
             paint: Paint,
             host: FastBitmapDrawable,
-        ) =
-            if ((bitmapInfo.flags and FLAG_FULL_BLEED) != 0) FullBleedDrawableDelegate(bitmapInfo)
-            else SimpleDrawableDelegate
+            creationFlags: Int,
+        ) = when {
+    (creationFlags and FLAG_CUSTOM_SHAPE) != 0 -> CustomShapeDrawableDelegate
+            (bitmapInfo.flags and FLAG_FULL_BLEED) != 0 -> FullBleedDrawableDelegate(bitmapInfo)
+            else -> SimpleDrawableDelegate
+        }
     }
 
     companion object {

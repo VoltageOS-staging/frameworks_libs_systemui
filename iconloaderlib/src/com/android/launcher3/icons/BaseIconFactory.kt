@@ -17,6 +17,7 @@ package com.android.launcher3.icons
 
 import android.content.Context
 import android.content.Intent.ShortcutIconResource
+import android.graphics.PorterDuff
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config.ARGB_8888
 import android.graphics.Canvas
@@ -37,6 +38,8 @@ import com.android.launcher3.icons.ColorExtractor.findDominantColorByHue
 import com.android.launcher3.icons.GraphicsUtils.generateIconShape
 import com.android.launcher3.icons.GraphicsUtils.transformed
 import com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR
+import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_CUSTOM_SHAPE
+import com.android.launcher3.icons.FastBitmapDrawableDelegate.SimpleDelegateFactory
 import com.android.launcher3.icons.ShadowGenerator.BLUR_FACTOR
 import com.android.launcher3.util.FlagOp
 import com.android.launcher3.util.UserIconInfo
@@ -166,6 +169,8 @@ constructor(
         // Create the bitmap first
         val oldBounds = icon.bounds
 
+        val isIconPackIcon = (icon.changingConfigurations and CONFIG_HINT_NO_WRAP) != 0
+
         var tempIcon: Drawable = icon
         if (options.isFullBleed && icon is BitmapDrawable) {
             // If the source is a full-bleed icon, create an adaptive icon by insetting this icon to
@@ -178,10 +183,9 @@ constructor(
                     InsetDrawable(icon, inset, inset, inset, inset),
                 )
         }
-        if (options.wrapNonAdaptiveIcon) {
-            if ((tempIcon.changingConfigurations and CONFIG_HINT_NO_WRAP) == 0) {
+        if (options.wrapNonAdaptiveIcon && 
+            (tempIcon.changingConfigurations and CONFIG_HINT_NO_WRAP) == 0) {
                 tempIcon = wrapToAdaptiveIcon(tempIcon, options)
-            }
         }
 
         val drawFullBleed = options.drawFullBleed ?: drawFullBleedIcons
@@ -191,8 +195,14 @@ constructor(
         val color = options.extractedColor ?: findDominantColorByHue(bitmap)
         var flagOp = getBitmapFlagOp(options)
         if (drawFullBleed) {
-            flagOp = flagOp.addFlag(BitmapInfo.FLAG_FULL_BLEED)
+            if (!isIconPackIcon) {
+                flagOp = flagOp.addFlag(BitmapInfo.FLAG_FULL_BLEED)
+            }
             bitmap.setHasAlpha(false)
+        }
+
+        if (isIconPackIcon) {
+            flagOp = flagOp.addFlag(FLAG_CUSTOM_SHAPE)
         }
 
         var info =
@@ -206,7 +216,7 @@ constructor(
             info = icon.getUpdatedBitmapInfo(info, this)
         }
 
-        if (IconProvider.ATLEAST_T && themeController != null) {
+        if (IconProvider.ATLEAST_T && themeController != null && !isIconPackIcon) {
             info =
                 info.copy(
                     themedBitmap =
@@ -290,7 +300,23 @@ constructor(
         drawFullBleed: Boolean,
         options: IconOptions,
     ): Bitmap {
-        if (icon is AdaptiveIconDrawable) {
+        val isIconPackIcon = (icon.changingConfigurations and CONFIG_HINT_NO_WRAP) != 0
+        
+        if (icon is AdaptiveIconDrawable && isIconPackIcon) {
+            
+            icon.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+            
+            return createBitmap(options) { canvas, _ ->
+                icon.background?.let { bg ->
+                    bg.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+                    bg.draw(canvas)
+                }
+                icon.foreground?.let { fg ->
+                    fg.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+                    fg.draw(canvas)
+                }
+            }
+        } else if (icon is AdaptiveIconDrawable) {
             // We are ignoring KEY_SHADOW_DISTANCE because regular icons ignore this at the
             // moment b/298203449
             val offset =
@@ -318,6 +344,15 @@ constructor(
                         icon.draw(canvas)
                     }
                 }
+            }
+        } else if (isIconPackIcon) {
+            if (icon is BitmapDrawable && icon.bitmap?.density == Bitmap.DENSITY_NONE) {
+                icon.setTargetDensity(context.resources.displayMetrics)
+            }
+            icon.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+
+            return createBitmap(options) { canvas, bitmap ->
+                icon.draw(canvas)
             }
         } else {
             if (icon is BitmapDrawable && icon.bitmap?.density == Bitmap.DENSITY_NONE) {

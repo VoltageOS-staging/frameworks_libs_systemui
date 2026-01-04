@@ -87,6 +87,7 @@ class PlaceHolderDrawableDelegate(info: BitmapInfo, paint: Paint, loadingColor: 
             iconShape: IconShape,
             paint: Paint,
             host: FastBitmapDrawable,
+            creationFlags: Int,
         ): FastBitmapDrawableDelegate {
             return PlaceHolderDrawableDelegate(bitmapInfo, paint, loadingColor)
         }
