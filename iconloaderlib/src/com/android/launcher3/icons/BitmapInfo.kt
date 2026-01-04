@@ -105,7 +105,9 @@ data class BitmapInfo(
                 },
             disabledAlpha = GraphicsUtils.getFloat(context, R.attr.disabledIconAlpha, 1f),
             creationFlags = if (iconShape != null) {
-                creationFlags.or(FLAG_CUSTOM_SHAPE)
+                creationFlags or FLAG_CUSTOM_SHAPE
+            } else if (flags.hasMask(FLAG_CUSTOM_SHAPE)) {
+                creationFlags or FLAG_CUSTOM_SHAPE
             } else {
                 creationFlags
             },
@@ -222,7 +224,7 @@ data class BitmapInfo(
         const val FLAG_THEMED: Int = 1 shl 0
         const val FLAG_NO_BADGE: Int = 1 shl 1
         const val FLAG_SKIP_USER_BADGE: Int = 1 shl 2
-        const val FLAG_CUSTOM_SHAPE: Int = 1 shl 3
+        const val FLAG_CUSTOM_SHAPE: Int = 1 shl 5
 
         @JvmField val LOW_RES_ICON: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8)
         @JvmField val LOW_RES_INFO: BitmapInfo = fromBitmap(LOW_RES_ICON)

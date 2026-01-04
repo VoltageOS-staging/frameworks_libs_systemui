@@ -59,7 +59,7 @@ constructor(
 
     @JvmField protected val paint: Paint = Paint(FILTER_BITMAP_FLAG or ANTI_ALIAS_FLAG)
 
-    val delegate = delegateFactory.newDelegate(bitmapInfo, iconShape, paint, this)
+    val delegate = delegateFactory.newDelegate(bitmapInfo, iconShape, paint, this, creationFlags)
 
     @JvmField @VisibleForTesting var isPressed: Boolean = false
     @JvmField @VisibleForTesting var isHovered: Boolean = false

@@ -103,5 +103,6 @@ class ThemedIconInfo(val mono: Bitmap, val colorBg: Int, val colorFg: Int) : Del
         iconShape: IconShape,
         paint: Paint,
         host: FastBitmapDrawable,
+        creationFlags: Int,
     ) = ThemedIconDelegate(this, bitmapInfo, paint)
 }

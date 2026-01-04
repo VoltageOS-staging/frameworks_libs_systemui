@@ -37,6 +37,8 @@ import com.android.launcher3.icons.ColorExtractor.findDominantColorByHue
 import com.android.launcher3.icons.GraphicsUtils.generateIconShape
 import com.android.launcher3.icons.GraphicsUtils.transformed
 import com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR
+import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_CUSTOM_SHAPE
+import com.android.launcher3.icons.FastBitmapDrawableDelegate.SimpleDelegateFactory
 import com.android.launcher3.icons.ShadowGenerator.BLUR_FACTOR
 import com.android.launcher3.util.FlagOp
 import com.android.launcher3.util.UserIconInfo
@@ -166,6 +168,8 @@ constructor(
         // Create the bitmap first
         val oldBounds = icon.bounds
 
+        val isIconPackIcon = (icon.changingConfigurations and CONFIG_HINT_NO_WRAP) != 0
+
         var tempIcon: Drawable = icon
         if (options.isFullBleed && icon is BitmapDrawable) {
             // If the source is a full-bleed icon, create an adaptive icon by insetting this icon to
@@ -195,6 +199,10 @@ constructor(
             bitmap.setHasAlpha(false)
         }
 
+        if (isIconPackIcon) {
+            flagOp = flagOp.addFlag(FLAG_CUSTOM_SHAPE)
+        }
+
         var info =
             BitmapInfo(
                 icon = bitmap,
@@ -206,7 +214,7 @@ constructor(
             info = icon.getUpdatedBitmapInfo(info, this)
         }
 
-        if (IconProvider.ATLEAST_T && themeController != null) {
+        if (IconProvider.ATLEAST_T && themeController != null && !isIconPackIcon) {
             info =
                 info.copy(
                     themedBitmap =
@@ -290,7 +298,30 @@ constructor(
         drawFullBleed: Boolean,
         options: IconOptions,
     ): Bitmap {
-        if (icon is AdaptiveIconDrawable) {
+        // Check if this is an icon pack icon
+        val isIconPackIcon = (icon.changingConfigurations and CONFIG_HINT_NO_WRAP) != 0
+        
+        if (icon is AdaptiveIconDrawable && isIconPackIcon) {
+            // ICON PACK AdaptiveIconDrawable
+            // Draw background and foreground at FULL SIZE without shape clipping
+            // Icon pack adaptive icons already have their shape designed into the layers
+            
+            icon.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+            
+            return createBitmap(options) { canvas, _ ->
+                // NO offset, NO clipPath, NO shape mask
+                // Just draw the layers at full size
+                icon.background?.let { bg ->
+                    bg.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+                    bg.draw(canvas)
+                }
+                icon.foreground?.let { fg ->
+                    fg.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+                    fg.draw(canvas)
+                }
+            }
+        } else if (icon is AdaptiveIconDrawable) {
+            // SYSTEM AdaptiveIconDrawable - render with shape
             // We are ignoring KEY_SHADOW_DISTANCE because regular icons ignore this at the
             // moment b/298203449
             val offset =
@@ -319,7 +350,21 @@ constructor(
                     }
                 }
             }
+        } else if (isIconPackIcon) {
+            // ICON PACK non-adaptive (BitmapDrawable/regular drawable)
+            // Draw at FULL SIZE without wrapping or scaling
+            // Icon packs provide pre-shaped icons - don't add square padding
+            if (icon is BitmapDrawable && icon.bitmap?.density == Bitmap.DENSITY_NONE) {
+                icon.setTargetDensity(context.resources.displayMetrics)
+            }
+            icon.setBounds(0, 0, iconBitmapSize, iconBitmapSize)
+
+            return createBitmap(options) { canvas, bitmap ->
+                icon.draw(canvas)
+                // Skip shadow for icon pack icons
+            }
         } else {
+            // SYSTEM non-adaptive icon - render with wrapping and shadow
             if (icon is BitmapDrawable && icon.bitmap?.density == Bitmap.DENSITY_NONE) {
                 icon.setTargetDensity(context.resources.displayMetrics)
             }

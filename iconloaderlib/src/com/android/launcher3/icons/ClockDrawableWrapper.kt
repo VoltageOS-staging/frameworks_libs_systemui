@@ -122,6 +122,7 @@ private constructor(base: AdaptiveIconDrawable, private val animationInfo: Clock
             iconShape: IconShape,
             paint: Paint,
             host: FastBitmapDrawable,
+            creationFlags: Int,
         ): FastBitmapDrawableDelegate {
             return ClockDrawableDelegate(this, host, paint, iconShape)
         }
