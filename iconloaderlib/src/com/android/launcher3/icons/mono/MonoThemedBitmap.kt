@@ -138,10 +138,7 @@ class ColorAdapter(private val luminanceDelta: Double) {
     }
 
     private fun adaptBackgroundColor(colorBg: Int, colorBgNonMonochrome: Int): Int {
-        if (luminanceDelta.isNaN()) {
-            return colorBg
-        }
-        return colorBgNonMonochrome
+        return colorBg
     }
 
     private companion object {
